@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>✨ Portail Cosmique Ultime ✨</title>
+    <style>
+        /* Reset & basiques */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; }
+        body {
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: radial-gradient(#000000 0%, #050014 60%, #000 100%);
+            color: #fff;
+        }
+
+        /* Canvas & layers */
+        #canvas { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display:block; }
+        .stars { position: fixed; inset: 0; pointer-events: none; z-index: 1; }
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.85;
+            transform-origin: center;
+            pointer-events: auto;
+        }
+
+        /* UI central */
+        .ui-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            z-index: 5;
+            text-align: center;
+            pointer-events: none;
+        }
+        .ui-container > * { pointer-events: auto; }
+
+        h1 {
+            font-size: clamp(2rem, 5vw, 5rem);
+            background: linear-gradient(45deg,#ff00ff,#00ffff,#ff00ff);
+            -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+            text-shadow: 0 0 30px rgba(138,43,226,0.8);
+            margin-bottom: 1.5rem;
+            filter: drop-shadow(0 0 20px #8a2be2);
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-12px); } }
+
+        .portal-btn {
+            background: linear-gradient(135deg,#667eea,#764ba2,#f093fb);
+            padding: clamp(12px, 2vw, 28px) clamp(24px,5vw,60px);
+            font-size: clamp(1rem, 2vw, 2.2rem);
+            color:#fff; border-radius: 48px; border: 3px solid rgba(255,255,255,0.15);
+            cursor: pointer; font-weight:700; z-index:6;
+            box-shadow: 0 10px 40px rgba(138,43,226,0.35);
+            transition: transform .25s ease, box-shadow .25s ease;
+        }
+        .portal-btn:hover { transform: translateY(-6px) scale(1.03); box-shadow: 0 18px 60px rgba(138,43,226,0.55); }
+
+        .info-text { margin-top: 1rem; font-size: 1.05rem; color: rgba(255,255,255,0.9); text-shadow: 0 0 8px rgba(255,255,255,0.06); }
+
+        .particle-count { position: fixed; top: 18px; right: 18px; z-index: 9; background: rgba(0,0,0,0.45); padding:8px 12px; border-radius:10px; border:1px solid rgba(138,43,226,0.35); font-size: .95rem; backdrop-filter: blur(6px); }
+
+        /* Loading / enigmes */
+        .modal {
+            position: fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index: 20;
+            pointer-events: none;
+        }
+        .panel {
+            width: min(860px, 92%);
+            background: linear-gradient(180deg, rgba(10,6,20,0.85), rgba(5,2,10,0.9));
+            padding: 24px; border-radius: 14px; border: 2px solid rgba(138,43,226,0.18);
+            box-shadow: 0 20px 80px rgba(0,0,0,0.6);
+            pointer-events: auto;
+        }
+        .hidden { display:none; }
+
+        .loading-screen { display:flex; flex-direction:column; gap:16px; align-items:center; justify-content:center; padding: 24px; }
+        .portal-ring { display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:6px; }
+        .ring { width: 160px; height:160px; border-radius:50%; border:4px solid rgba(102,126,234,0.35); animation: spin 1.6s linear infinite; box-shadow:0 0 30px rgba(102,126,234,.15); }
+        .ring.small { width:120px; height:120px; animation-duration:2s; border-color: rgba(118,75,162,0.3); }
+        .ring.xs { width:80px; height:80px; animation-duration:3s; border-color: rgba(240,147,251,0.25); }
+        @keyframes spin { from { transform: rotate(0deg);} to { transform: rotate(360deg);} }
+
+        .progress-bar { width: 100%; height: 10px; background: rgba(255,255,255,0.06); border-radius:999px; overflow:hidden; border:1px solid rgba(255,255,255,0.03); }
+        .progress-fill { height:100%; width:0%; background: linear-gradient(90deg,#667eea,#764ba2,#f093fb); transition: width .25s linear; }
+
+        /* Indicateur d'énigme (subtil) */
+        .clue { margin-top:12px; color: rgba(255,255,255,0.9); font-size: 1rem; text-align:center; }
+
+        /* Glitch effect (réversible, court) */
+        .glitch {
+            animation: glitchAnim .5s linear 6;
+            filter: hue-rotate(180deg) contrast(1.2) saturate(1.2);
+        }
+        @keyframes glitchAnim {
+            0% { transform: translateX(0) }
+            20% { transform: translateX(-3px) skewX(-2deg) }
+            40% { transform: translateX(3px) skewX(2deg) }
+            60% { transform: translateX(-2px) }
+            80% { transform: translateX(1px) }
+            100% { transform: translateX(0) }
+        }
+
+        /* Confettis (CSS) */
+        .confetti { position: absolute; width:8px; height:14px; transform-origin: center; border-radius:2px; opacity:.95; }
+
+        /* Fullscreen video */
+        .fullscreen-video { display:none; position:fixed; inset:0; z-index:9999; background:#000; align-items:center; justify-content:center; }
+        .fullscreen-video video { width:100%; height:100%; object-fit:cover; }
+
+        .close-btn { position: fixed; top: 18px; left: 18px; z-index:10001; background: rgba(255,255,255,0.12); color:white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 14px; border-radius: 8px; cursor:pointer; }
+
+        /* Responsive mini ajustements */
+        @media (max-width:700px) {
+            .panel { padding: 16px; }
+            .ring { width:120px; height:120px; }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="stars" id="stars" aria-hidden="true"></div>
+
+    <div class="ui-container" id="ui">
+        <h1>✨ PORTAIL COSMIQUE ULTIME ✨</h1>
+        <button class="portal-btn" id="portalBtn" title="Ouvre le portail">🌌 ENTRER DANS LE PORTAIL 🌌</button>
+        <div class="info-text">⚡ Prépare-toi — plusieurs énigmes sont dissimulées dans les étoiles ⚡</div>
+    </div>
+
+    <div class="particle-count" id="particleCount">✨ Particules: 0</div>
+
+    <!-- Modal / panneau d'énigme -->
+    <div class="modal" id="modal" aria-hidden="true">
+        <div class="panel hidden" id="puzzlePanel">
+            <div class="loading-screen">
+                <div class="portal-ring" aria-hidden="true">
+                    <div class="ring"></div>
+                    <div class="ring small"></div>
+                    <div class="ring xs"></div>
+                </div>
+                <div class="loading-text" id="puzzleTitle">🌀 Authentification Stellaire 🌀</div>
+
+                <div class="clue" id="clueText">Un motif brille en silence dans les étoiles : clique-les dans l'ordre du scintillement.</div>
+
+                <div style="width:100%; display:flex; gap:12px; margin-top:10px;">
+                    <div style="flex:1">
+                        <div class="progress-bar" aria-hidden="true"><div class="progress-fill" id="pbar"></div></div>
+                    </div>
+                    <div style="min-width:80px; text-align:right; color:rgba(255,255,255,0.9)" id="pbarLabel">0%</div>
+                </div>
+
+                <div style="display:flex; gap:8px; justify-content:center; margin-top:12px;">
+                    <button id="giveUp" style="padding:8px 12px; border-radius:8px; cursor:pointer;">Annuler</button>
+                    <button id="hintBtn" style="padding:8px 12px; border-radius:8px; cursor:pointer;">Indice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen video (rickroll local as before) -->
+    <div class="fullscreen-video" id="videoContainer" aria-hidden="true">
+        <button class="close-btn" id="closeVideoBtn">✕ Fermer</button>
+        <video id="localVideo" loop playsinline preload="auto">
+            <source src="rickroll.mp4" type="video/mp4">
+            Votre navigateur ne supporte pas la balise vidéo.
+        </video>
+    </div>
+
+    <script>
+    /*
+     * Heavily commented, sécurisé, français.
+     * Ajouts principaux :
+     *  - Puzzle "constellation": certaines étoiles sont choisies et scintillent plus lent.
+     *  - Konami (easter egg) clavier.
+     *  - Protections: mise à l'échelle selon hardware, plafonnement des particules, effets limités.
+     *  - "Piège" discret : faux échec -> glitch et anneau visuel, réversible rapidement.
+     */
+
+    // --- Détection capacité machine (pour ne pas faire fondre le PC) ---
+    const deviceMemory = navigator.deviceMemory || 4; // fallback raisonnable
+    const logicalCores = navigator.hardwareConcurrency || 4;
+    // Max particles dépend de mémoire et des coeurs
+    const MAX_PARTICLES = Math.max(300, Math.min(1500, Math.floor(deviceMemory * 200)));
+    console.log('deviceMemory', deviceMemory, 'cores', logicalCores, 'MAX_PARTICLES', MAX_PARTICLES);
+
+    // --- Canvas setup ---
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d', { alpha: true });
+    function resizeCanvas() {
+        canvas.width = innerWidth;
+        canvas.height = innerHeight;
+    }
+    addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // --- Particules (pool light) ---
+    let particles = [];
+    let hue = 220;
+    let portalActive = false;
+    let mouse = { x: innerWidth/2, y: innerHeight/2 };
+
+    class Particle {
+        constructor(x, y, colorHue) {
+            this.reset(x,y,colorHue);
+        }
+        reset(x,y,colorHue) {
+            this.x = x; this.y = y;
+            this.vx = (Math.random()-0.5) * 6;
+            this.vy = (Math.random()-0.5) * 6;
+            this.size = Math.random()*4 + 1;
+            this.life = 0.9 + Math.random()*0.2;
+            this.h = (colorHue || (hue + Math.random()*60 - 30)) % 360;
+        }
+        update() {
+            // si le portail est actif, attirer vers la souris
+            if (portalActive) {
+                const dx = mouse.x - this.x; const dy = mouse.y - this.y;
+                const d2 = dx*dx + dy*dy + 0.001;
+                const dist = Math.sqrt(d2);
+                const force = Math.min(600/dist, 6) * 0.08;
+                this.vx += (dx/dist) * force;
+                this.vy += (dy/dist) * force;
+                // rotation douce
+                const s = Math.sin(dist*0.01 + performance.now()*0.0005) * 0.5;
+                this.vx += s*0.1; this.vy -= s*0.1;
+            }
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vx *= 0.96; this.vy *= 0.96;
+            this.size *= 0.997;
+            this.life -= 0.004;
+        }
+        draw() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.fillStyle = `hsla(${this.h}, 90%, 60%, ${Math.max(0, this.life)})`;
+            ctx.shadowBlur = Math.min(40, this.size*8);
+            ctx.shadowColor = `hsl(${this.h}, 90%, 60%)`;
+            ctx.globalAlpha = this.life;
+            ctx.arc(this.x, this.y, Math.max(0.3, this.size), 0, Math.PI*2);
+            ctx.fill();
+            // small trail
+            ctx.globalAlpha = this.life * 0.3;
+            ctx.beginPath();
+            ctx.arc(this.x - this.vx*2, this.y - this.vy*2, Math.max(0.2, this.size*0.5), 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    function createParticles(x,y,count) {
+        // limite stricte
+        if (particles.length > MAX_PARTICLES) return;
+        for (let i=0;i<count && particles.length < MAX_PARTICLES;i++) {
+            particles.push(new Particle(x + (Math.random()-0.5)*20, y + (Math.random()-0.5)*20, hue + Math.random()*80 - 40));
+        }
+    }
+
+    // --- Vortex rings (cosmétiques) ---
+    const rings = [];
+    class Ring {
+        constructor(x,y) { this.x=x; this.y=y; this.r=0; this.life=1; }
+        update() { this.r += 6; this.life -= 0.02; }
+        draw() {
+            ctx.save();
+            ctx.beginPath();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = `hsla(${(hue+120)%360}, 90%, 60%, ${Math.max(0, this.life)})`;
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = `hsl(${(hue+120)%360}, 80%, 60%)`;
+            ctx.arc(this.x,this.y,this.r,0,Math.PI*2); ctx.stroke();
+            ctx.restore();
+        }
+    }
+    function createRing(x,y) { if (rings.length < 8) rings.push(new Ring(x,y)); }
+
+    // --- Stars DOM (interactives) ---
+    const starsContainer = document.getElementById('stars');
+    const STAR_COUNT = Math.min(220, Math.floor(innerWidth/6));
+    const starElems = [];
+    for (let i=0;i<STAR_COUNT;i++) {
+        const d = document.createElement('div');
+        d.className = 'star';
+        d.style.left = (Math.random()*96+2) + '%';
+        d.style.top = (Math.random()*96+2) + '%';
+        const size = Math.random()*3 + 1;
+        d.style.width = d.style.height = size + 'px';
+        d.style.opacity = (0.4 + Math.random()*0.6).toFixed(2);
+        d.dataset.index = i;
+        // subtle hue
+        const h = Math.floor((hue + Math.random()*140 - 70 + 360) % 360);
+        d.style.background = `hsl(${h}, 100%, 90%)`;
+        // random twinkle speed
+        d.style.animation = `twinkle ${1.8 + Math.random()*2}s ${Math.random()*2}s infinite`;
+        // allow click
+        d.tabIndex = 0;
+        starsContainer.appendChild(d);
+        starElems.push(d);
+    }
+
+    // --- Puzzle constellation selection (discret et fiable) ---
+    // On choisit un sous-ensemble d'étoiles (4 à 6) ; on les marque subtilement par un "scintillement" plus lent/fort.
+    const secretIndices = [];
+    (function pickSecret() {
+        const count = 5; // assez pour être subtil
+        const picks = new Set();
+        while (picks.size < count) {
+            picks.add(Math.floor(Math.random()*STAR_COUNT));
+        }
+        for (const idx of picks) secretIndices.push(idx);
+    })();
+    // Ordre secret = ordre naturel de selection (insertion order)
+    const secretOrder = secretIndices.slice(); // array of indices
+    // On applique un style distinct aux étoiles secrètes mais discret (taille + animation)
+    secretIndices.forEach((idx, pos) => {
+        const el = starElems[idx];
+        if (!el) return;
+        el.dataset.secret = '1';
+        // Slightly larger and a slower, more noticeable twinkle but still subtle
+        const currentSize = parseFloat(el.style.width) || 2;
+        el.style.width = el.style.height = (currentSize * 1.6) + 'px';
+        el.style.boxShadow = '0 0 10px rgba(255,255,255,0.08)';
+        // store expected order on element
+        el.dataset.secretOrder = pos; // pos -> 0..n-1
+    });
+
+    // Puzzle state: user must click stars in increasing secretOrder
+    let puzzleProgress = 0;
+    let failCount = 0;
+    let puzzlePanel = document.getElementById('puzzlePanel');
+    let modal = document.getElementById('modal');
+    let portalBtn = document.getElementById('portalBtn');
+
+    // Show puzzle panel function
+    function showPuzzle() {
+        modal.style.pointerEvents = 'auto';
+        puzzlePanel.classList.remove('hidden');
+        modal.setAttribute('aria-hidden','false');
+        document.getElementById('pbar').style.width = '0%';
+        document.getElementById('pbarLabel').textContent = '0%';
+        puzzleProgress = 0;
+        failCount = 0;
+        // hint text dynamic
+        document.getElementById('clueText').textContent = 'Observation : certaines étoiles scintillent autrement. Clique-les dans l\'ordre.';
+    }
+
+    function hidePuzzle() {
+        puzzlePanel.classList.add('hidden');
+        modal.style.pointerEvents = 'none';
+        modal.setAttribute('aria-hidden','true');
+    }
+
+    // Click listener on stars
+    starElems.forEach(el => {
+        el.addEventListener('click', (e) => {
+            // if puzzle visible, handle secret clicks
+            if (!puzzlePanel.classList.contains('hidden')) {
+                const isSecret = el.dataset.secret === '1';
+                if (!isSecret) {
+                    wrongClick();
+                    return;
+                }
+                const order = parseInt(el.dataset.secretOrder,10);
+                if (order === puzzleProgress) {
+                    // correct
+                    puzzleProgress++;
+                    updateProgressUI();
+                    // small particle burst
+                    const rect = el.getBoundingClientRect();
+                    const cx = rect.left + rect.width/2;
+                    const cy = rect.top + rect.height/2;
+                    createParticles(cx, cy, 10);
+                    createRing(cx, cy);
+                    // slight glow effect
+                    el.style.boxShadow = '0 0 22px rgba(255,255,255,0.35)';
+                    setTimeout(() => { el.style.boxShadow = '0 0 10px rgba(255,255,255,0.08)'; }, 900);
+                    if (puzzleProgress >= secretIndices.length) {
+                        // solved
+                        solvedSequence();
+                    }
+                } else {
+                    wrongClick();
+                }
+            } else {
+                // otherwise, small particle pop for fun
+                const rect = el.getBoundingClientRect();
+                createParticles(rect.left + rect.width/2, rect.top + rect.height/2, 6);
+            }
+        });
+    });
+
+    function updateProgressUI() {
+        const pct = Math.round((puzzleProgress/secretIndices.length) * 100);
+        document.getElementById('pbar').style.width = pct + '%';
+        document.getElementById('pbarLabel').textContent = pct + '%';
+    }
+
+    function wrongClick() {
+        failCount++;
+        // Glitch UI quickly (harmless), effect limited
+        document.body.classList.add('glitch');
+        setTimeout(()=>document.body.classList.remove('glitch'), 900);
+        // small penalty particles
+        createParticles(Math.random()*innerWidth, Math.random()*innerHeight, 14);
+        if (failCount >= 5) {
+            // show decoy blackhole animation (cosmetic only)
+            triggerBlackhole();
+            failCount = 0;
+        }
+    }
+
+    function triggerBlackhole() {
+        // central ring expansion and darken then restore
+        portalActive = false;
+        const overlayTime = 1200;
+        // create a visual central pulse using rings
+        createRing(innerWidth/2, innerHeight/2);
+        // dim screen with CSS filter then restore
+        document.body.style.transition = 'filter 0.6s ease';
+        document.body.style.filter = 'contrast(0.6) saturate(0.7) brightness(0.6)';
+        setTimeout(()=>{ document.body.style.filter = ''; }, overlayTime + 300);
+        // gentle confetti as red herring
+        spawnConfetti(innerWidth/2, innerHeight/2, 24);
+    }
+
+    function solvedSequence() {
+        // close puzzle, big but safe effects, then open portal for real
+        hidePuzzle();
+        portalActive = true;
+        playVictoryPulse();
+        // small delay then open video
+        setTimeout(()=> openPortalVideo(), 1500);
+    }
+
+    // confetti (lightweight DOM css)
+    function spawnConfetti(x,y,count) {
+        const frag = document.createDocumentFragment();
+        for (let i=0;i<count;i++) {
+            const c = document.createElement('div');
+            c.className = 'confetti';
+            c.style.left = (x + (Math.random()-0.5)*260) + 'px';
+            c.style.top = (y + (Math.random()-0.5)*160) + 'px';
+            c.style.width = 6 + 'px';
+            c.style.height = 10 + 'px';
+            const color = `hsl(${Math.random()*360},80%,60%)`;
+            c.style.background = color;
+            c.style.opacity = 0.95;
+            c.style.transform = `rotate(${Math.random()*360}deg)`;
+            c.style.transition = `transform 1.2s ease-out, top 1.2s ease-out, opacity 1.2s linear`;
+            frag.appendChild(c);
+            setTimeout(()=> {
+                c.style.top = (parseFloat(c.style.top) + 160 + Math.random()*120) + 'px';
+                c.style.transform = `rotate(${Math.random()*720}deg) translateX(${(Math.random()-0.5)*80}px)`;
+                c.style.opacity = 0;
+            }, 50 + Math.random()*80);
+            setTimeout(()=> c.remove(), 1600);
+        }
+        document.body.appendChild(frag);
+    }
+
+    // gentle victory pulse using rings + particles
+    function playVictoryPulse() {
+        const cx = innerWidth/2, cy = innerHeight/2;
+        for (let i=0;i<6;i++) {
+            setTimeout(()=> {
+                createRing(cx, cy);
+                createParticles(cx, cy, 120);
+            }, i*120);
+        }
+        spawnConfetti(cx,cy,40);
+    }
+
+    // --- Portal / Video handling ---
+    const videoContainer = document.getElementById('videoContainer');
+    const video = document.getElementById('localVideo');
+    const closeVideoBtn = document.getElementById('closeVideoBtn');
+    closeVideoBtn.addEventListener('click', closeVideo);
+
+    // Consolidated function: hides UI and opens the fullscreen video container and plays the video.
+    function openPortalVideo() {
+        // hide main UI
+        const ui = document.getElementById('ui');
+        if (ui) ui.style.display = 'none';
+        // try fullscreen politely
+        const docEl = document.documentElement;
+        if (docEl.requestFullscreen) docEl.requestFullscreen().catch(()=>{});
+        videoContainer.style.display = 'flex';
+        videoContainer.style.zIndex = 9999;
+        try { const p = video.play(); if (p && p.catch) p.catch(()=>{}); } catch(e){}
+    }
+
+    function closeVideo() {
+        try { video.pause(); video.currentTime = 0; } catch (e) {}
+        videoContainer.style.display = 'none';
+        if (document.exitFullscreen) document.exitFullscreen().catch(()=>{});
+        portalActive = false;
+        const pbar = document.getElementById('pbar');
+        if (pbar) pbar.style.width = '0%';
+        const lbl = document.getElementById('pbarLabel');
+        if (lbl) lbl.textContent = '0%';
+        const ui = document.getElementById('ui');
+        if (ui) ui.style.display = 'block';
+    }
+
+    // ESC closes video
+    addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && videoContainer.style.display === 'flex') closeVideo();
+    });
+
+    // --- Portal button: ouvre panneau énigme (discret) ---
+    portalBtn.addEventListener('click', () => {
+        // show puzzle instead of immediate activation
+        showPuzzle();
+    });
+
+    // give up and hint
+    document.getElementById('giveUp').addEventListener('click', hidePuzzle);
+    document.getElementById('hintBtn').addEventListener('click', () => {
+        // reveal next star with a brief glow
+        const nextIdx = secretOrder[puzzleProgress] !== undefined ? secretOrder[puzzleProgress] : null;
+        const el = (nextIdx !== null) ? starElems[nextIdx] : null;
+        if (el) {
+            el.style.transition = 'box-shadow 0.35s, transform 0.35s';
+            el.style.boxShadow = '0 0 40px rgba(255,255,255,0.6)';
+            el.style.transform = 'scale(1.35)';
+            setTimeout(()=>{ el.style.boxShadow='0 0 10px rgba(255,255,255,0.08)'; el.style.transform=''; }, 900);
+            document.getElementById('clueText').textContent = 'Indice : observe le scintillement plus calme...';
+        } else {
+            document.getElementById('clueText').textContent = 'Aucun indice disponible pour l\'instant.';
+        }
+    });
+
+    // --- Konami easter egg (séquence clavier) ---
+    const konami = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+    let konamiProgress = 0;
+    addEventListener('keydown', (e) => {
+        if (e.key === konami[konamiProgress]) {
+            konamiProgress++;
+            if (konamiProgress >= konami.length) {
+                // Unlock ultimate portal (fast)
+                konamiProgress = 0;
+                // immediate spectacular but safe effect
+                portalActive = true;
+                playVictoryPulse();
+                setTimeout(openPortalVideo, 1200);
+            }
+        } else {
+            konamiProgress = 0;
+        }
+    });
+
+    // --- Mouse tracking & interactions ---
+    addEventListener('mousemove', (e) => { mouse.x = e.clientX; mouse.y = e.clientY; if (portalActive) createParticles(mouse.x, mouse.y, 2); });
+    addEventListener('click', (e) => { createParticles(e.clientX, e.clientY, 8); createRing(e.clientX, e.clientY); });
+
+    // --- Animation loop (performant) ---
+    function animate() {
+        // slight fade background for trails
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        ctx.fillStyle = 'rgba(0,0,0,0.12)';
+        ctx.fillRect(0,0,canvas.width,canvas.height);
+
+        hue = (hue + 0.3) % 360;
+
+        // spawn ambient particles if portal active but bounded
+        if (portalActive && particles.length < MAX_PARTICLES) {
+            createParticles(mouse.x, mouse.y, 6);
+        }
+
+        // update/draw particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.update();
+            p.draw();
+            if (p.life <= 0 || p.size < 0.4 || p.x < -100 || p.x > canvas.width + 100) {
+                particles.splice(i,1);
+            }
+        }
+
+        // rings
+        for (let i = rings.length - 1; i >= 0; i--) {
+            rings[i].update();
+            rings[i].draw();
+            if (rings[i].life <= 0) rings.splice(i,1);
+        }
+
+        // particle count UI (throttled simple)
+        const pc = document.getElementById('particleCount');
+        if (pc) pc.textContent = `✨ Particules: ${particles.length}`;
+
+        requestAnimationFrame(animate);
+    }
+
+    // initial ambient particles
+    for (let i=0;i<Math.min(160, MAX_PARTICLES/3);i++) {
+        createParticles(Math.random()*innerWidth, Math.random()*innerHeight, 1);
+    }
+    animate();
+
+    // --- Small accessibility: keyboard click on stars via Enter/Space ---
+    starElems.forEach(el => {
+        el.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter' || ev.key === ' ') el.click();
+        });
+    });
+
+    // --- Prevent runaway intervals: nothing setInterval long-lived in this script; all timeouts limited ---
+
+    </script>
+</body>
+</html>

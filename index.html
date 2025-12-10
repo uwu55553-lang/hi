@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Découvrez un portail cosmique interactif avec des effets de particules et des énigmes stellaires">
+  <meta name="theme-color" content="#0a0414">
+  <title>Portail Cosmique | Exploration Stellaire Interactive</title>
+  
+  <!-- Preload des polices critiques -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="/styles.css">
+  
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  
+  <!-- SEO -->
+  <meta property="og:title" content="Portail Cosmique | Exploration Stellaire">
+  <meta property="og:description" content="Découvrez un portail cosmique interactif avec des effets de particules et des énigmes stellaires">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://votresite.com">
+  <meta property="og:image" content="/og-image.jpg">
+  
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Portail Cosmique">
+  <meta name="twitter:description" content="Découvrez un portail cosmique interactif">
+  <meta name="twitter:image" content="/og-image.jpg">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Canvas pour les effets visuels -->
+    <canvas id="canvas" aria-hidden="true"></canvas>
+
+    <!-- Interface utilisateur principale -->
+    <main id="ui" class="ui-container">
+      <header class="ui-header">
+        <h1 class="title">✨ Portail Cosmique ✨</h1>
+        <p class="subtitle">Explorez les mystères de l'univers</p>
+      </header>
+      
+      <div class="controls">
+        <button id="openBtn" class="btn primary" aria-label="Ouvrir le portail cosmique">
+          <span class="btn-icon">🌌</span>
+          <span class="btn-text">Entrer dans le portail</span>
+        </button>
+        
+        <div class="secondary-actions">
+          <button id="puzzleBtn" class="btn" aria-label="Démarrer l'énigme stellaire">
+            <span class="btn-icon">🔎</span>
+            <span class="btn-text">Énigme</span>
+          </button>
+          
+          <button id="resetBtn" class="btn ghost" aria-label="Réinitialiser l'expérience">
+            <span class="btn-icon">♻️</span>
+            <span class="btn-text">Réinitialiser</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="hint-container">
+        <p class="hint">
+          <span class="hint-icon">💡</span>
+          <span>Indice : utilisez "Afficher séquence" ou activez le "Mode facile" si nécessaire.</span>
+        </p>
+      </div>
+
+      <footer class="ui-footer">
+        <div id="stats" class="stats" role="status" aria-live="polite">
+          <span class="stat">✨ Particules: <span id="particleCount">0</span></span>
+          <span class="stat-divider">•</span>
+          <span class="stat">FPS: <span id="fpsCounter">--</span></span>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Panneau d'énigme -->
+    <aside id="puzzlePanel" class="panel hidden" aria-hidden="true" aria-labelledby="puzzleTitle">
+      <div class="panel-header">
+        <h2 id="puzzleTitle" class="panel-title">Authentification Stellaire</h2>
+        <button id="closePuzzleBtn" class="btn ghost btn-close" aria-label="Fermer le panneau d'énigme">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>
+      
+      <div class="panel-content">
+        <p id="puzzleDesc" class="puzzle-description">Cliquez sur les étoiles-clés dans le bon ordre pour déverrouiller le portail.</p>
+        
+        <div class="puzzle-actions">
+          <button id="revealSeqBtn" class="btn">
+            <span class="btn-icon">👁️</span>
+            <span class="btn-text">Afficher séquence</span>
+          </button>
+          
+          <button id="hintBtn" class="btn">
+            <span class="btn-icon">💡</span>
+            <span class="btn-text">Indice (prochaine)</span>
+          </button>
+        </div>
+
+        <div class="puzzle-options">
+          <label class="option-toggle">
+            <input type="checkbox" id="easyMode" class="toggle-input">
+            <span class="toggle-slider"></span>
+            <span class="toggle-label">Mode facile (affiche les numéros)</span>
+          </label>
+        </div>
+
+        <div class="progress-container">
+          <div class="progress">
+            <div id="pFill" class="fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+          <div class="progress-hint">
+            Astuce : "Afficher séquence" montre brièvement l'ordre attendu.
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Overlay du portail -->
+    <div id="portalOverlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="portalTitle">
+      <div class="portal-visual" aria-hidden="true">
+        <div class="rings"></div>
+      </div>
+      
+      <div class="portal-content">
+        <h2 id="portalTitle" class="portal-title">Bienvenue de l'autre côté</h2>
+        <p class="portal-message">Vous avez réussi à traverser le portail cosmique !</p>
+        
+        <button id="closePortal" class="btn primary" aria-label="Fermer le portail">
+          <span class="btn-icon">✕</span>
+          <span class="btn-text">Fermer</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chargement asynchrone du JavaScript -->
+  <script type="module" src="/src/main.ts"></script>
+  
+  <!-- Script de secours pour les navigateurs sans support des modules -->
+  <script nomodule>
+    document.body.innerHTML = '<div style="padding:2rem;text-align:center;font-family:sans-serif;"><h1>Navigateur non supporté</h1><p>Veuillez utiliser une version récente de Chrome, Firefox, Edge ou Safari.</p></div>';
+  </script>
+</body>
+</html>

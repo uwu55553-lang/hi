@@ -1,0 +1,17 @@
+version: "3.8"
+services:
+  web:
+    build: .
+    ports:
+      - "3000:3000"
+      - "5173:5173"
+    volumes:
+      - ./:/app
+    environment:
+      - NODE_ENV=development
+    tty: true
+  wasm-builder:
+    image: rustlang/rust:1.74
+    command: ["bash","-lc","cd wasm && wasm-pack build --target web || true"]
+    volumes:
+      - ./:/work
